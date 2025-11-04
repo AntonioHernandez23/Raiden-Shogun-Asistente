@@ -1,7 +1,7 @@
 # =======================
 #  Configuración de OpenAI
 # =======================
-api_key = ""
+api_key = "" //Insertar la Api Key de OpenAi
 
 # ===========================
 #  Personalidad del Asistente

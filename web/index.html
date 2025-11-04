@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <!-- PWA Configuration -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#b794f6">
+
+  <!-- iOS specific -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Raiden AI">
+  <link rel="apple-touch-icon" href="/static/icon-192.png">
+  
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="color-scheme" content="dark light" />
+  <title>Raiden Assistant (VRM)</title>
+
+  <link rel="icon"
+        href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><circle cx="16" cy="16" r="16" fill="%230e1116"/><text x="16" y="21" font-size="16" text-anchor="middle" fill="%23ffffff">⚡</text></svg>' />
+
+  <style>
+    :root { color-scheme: dark; }
+    
+    html, body { 
+      height: 100%; 
+      margin: 0; 
+      color: #eef; 
+      overflow: hidden;
+      background: linear-gradient(135deg, 
+        #0a0015 0%,
+        #1e0a3d 15%,
+        #2d1154 35%,
+        #3d1570 55%,
+        #1e0a3d 75%,
+        #0f051f 100%
+      );
+      background-attachment: fixed;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: 
+        radial-gradient(ellipse at top, rgba(157, 78, 221, 0.1) 0%, transparent 50%),
+        radial-gradient(ellipse at bottom, rgba(90, 24, 154, 0.08) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    canvas { 
+      display: block; 
+      width: 100%; 
+      height: 100%; 
+      position: relative;
+      z-index: 2;
+    }
+
+    #gate {
+      position: fixed; 
+      inset: 0; 
+      display: grid; 
+      place-items: center;
+      z-index: 9999; 
+      pointer-events: none;
+      background: transparent;
+    }
+    
+    .pill {
+      pointer-events: auto;
+      padding: .75rem 1.5rem;
+      border-radius: 999px; 
+      border: 2px solid rgba(157, 78, 221, 0.5);
+      background: linear-gradient(135deg, #5a189a, #9d4edd); 
+      color: #fff; 
+      font-weight: 700;
+      box-shadow: 0 8px 40px rgba(157, 78, 221, 0.4);
+      cursor: pointer; 
+      letter-spacing: .5px;
+      transition: all .2s ease;
+    }
+    
+    .pill:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 50px rgba(157, 78, 221, 0.6);
+      border-color: rgba(199, 125, 255, 0.8);
+    }
+    
+    .pill:active { 
+      transform: translateY(1px); 
+    }
+
+    body {
+        touch-action: none;
+        user-select: none;
+        -webkit-user-select: none;
+        overflow: hidden;
+    }
+
+    #canvas3d {
+        width: 100vw !important;
+        height: 100vh !important;
+        display: block;
+    }
+
+    #controls {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 10px;
+        z-index: 1000;
+        flex-wrap: wrap;
+        justify-content: center;
+        max-width: 90vw;
+    }
+
+    #controls button {
+        padding: 15px 20px;
+        font-size: 16px;
+        min-width: 60px;
+        min-height: 50px;
+        touch-action: manipulation;
+        border-radius: 8px;
+        border: 2px solid rgba(183, 148, 246, 0.5);
+        background: rgba(183, 148, 246, 0.2);
+        color: #b794f6;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    #controls button:active {
+        transform: scale(0.95);
+        background: rgba(183, 148, 246, 0.4);
+    }
+
+    @media (min-width: 768px) and (max-width: 1024px) {
+        #controls {
+            bottom: 30px;
+        }
+        
+        #controls button {
+            padding: 18px 25px;
+            font-size: 18px;
+        }
+    }
+
+    @media (min-width: 1025px) {
+        #controls {
+            bottom: 40px;
+        }
+        
+        #controls button {
+            padding: 12px 24px;
+            font-size: 14px;
+            min-height: 45px;
+        }
+    }
+
+    @media (max-width: 768px) and (orientation: landscape) {
+        #controls {
+            bottom: 10px;
+            gap: 5px;
+        }
+        
+        #controls button {
+            padding: 8px 12px;
+            font-size: 14px;
+            min-height: 40px;
+            min-width: 50px;
+        }
+    }
+  </style>
+</head>
+
+<body>
+  <canvas id="scene"></canvas>
+
+  <audio id="bgm" src="/static/bgm.mp3" loop preload="none"></audio>
+
+  <div id="gate" aria-hidden="false">
+    <button id="audioBtn" class="pill" type="button" aria-label="Habilitar audio">
+      ⚡ Invocar a Raiden Shogun
+    </button>
+  </div>
+
+  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+  <script type="module" src="/static/app.js"></script>
+
+  <noscript>Activa JavaScript para ver el asistente.</noscript>
+
+  <!-- Service Worker Registration -->
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', async () => {
+    try {
+      const registration = await navigator.serviceWorker.register('/service-worker.js', {
+        scope: '/'
+      });
+      console.log('[SW] ✅ Service Worker registrado:', registration.scope);
+      
+      registration.addEventListener('updatefound', () => {
+        const newWorker = registration.installing;
+        console.log('[SW] 🔄 Nueva versión encontrada');
+        
+        newWorker.addEventListener('statechange', () => {
+          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            console.log('[SW] 🆕 Nueva versión disponible');
+            newWorker.postMessage({ type: 'SKIP_WAITING' });
+          }
+        });
+      });
+    } catch (error) {
+      console.log('[SW] ⚠️ Service Worker no disponible:', error.message);
+    }
+  });
+
+  let refreshing = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!refreshing) {
+      refreshing = true;
+      console.log('[SW] 🔄 Recargando página para aplicar cambios...');
+      window.location.reload();
+    }
+  });
+}
+</script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
